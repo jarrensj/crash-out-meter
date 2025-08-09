@@ -6,6 +6,8 @@ export default function Home() {
   const [animationPhase, setAnimationPhase] = useState(0);
   const [needleRotation, setNeedleRotation] = useState(-135); // Start at safe position
   const [isBroken, setIsBroken] = useState(false);
+  const [treatCooldown, setTreatCooldown] = useState(false);
+  const [showTreatEffect, setShowTreatEffect] = useState(false);
 
   useEffect(() => {
     const animationSequence = async () => {
@@ -34,6 +36,34 @@ export default function Home() {
 
     animationSequence();
   }, []);
+
+  const handleSweetTreat = () => {
+    if (treatCooldown) return;
+    
+    setTreatCooldown(true);
+    setShowTreatEffect(true);
+    
+    // Lower the risk level
+    if (animationPhase > 0) {
+      const newPhase = Math.max(0, animationPhase - 1);
+      setAnimationPhase(newPhase);
+      
+      // Update needle position based on new phase
+      const rotations = [-135, -45, 45, 135];
+      setNeedleRotation(rotations[newPhase] || -135);
+      
+      // If we go back from broken state, fix it
+      if (animationPhase >= 4 && newPhase < 4) {
+        setIsBroken(false);
+      }
+    }
+    
+    // Remove treat effect after animation
+    setTimeout(() => setShowTreatEffect(false), 1000);
+    
+    // Remove cooldown after 2 seconds
+    setTimeout(() => setTreatCooldown(false), 2000);
+  };
 
   return (
     <main className="min-h-screen p-8 flex flex-col items-center justify-center text-center bg-gray-900">
@@ -175,6 +205,50 @@ export default function Home() {
               Monitoring system status...
             </div>
           )}
+        </div>
+        
+        {/* Sweet Treat Button */}
+        <div className="mt-8 relative">
+          <button
+            onClick={handleSweetTreat}
+            disabled={treatCooldown || animationPhase === 0}
+            className={`
+              px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 transform
+              ${treatCooldown 
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                : animationPhase === 0
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 hover:scale-105 shadow-lg hover:shadow-pink-500/25'
+              }
+              ${showTreatEffect ? 'animate-bounce' : ''}
+            `}
+          >
+            🍭 Sweet Treat 🍭
+          </button>
+          
+          {/* Treat effect animation */}
+          {showTreatEffect && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-4xl animate-ping">✨</div>
+            </div>
+          )}
+          
+          {/* Cooldown indicator */}
+          {treatCooldown && (
+            <div className="mt-2 text-sm text-gray-400">
+              Treat cooldown: 2s
+            </div>
+          )}
+          
+          {/* Instructions */}
+          <div className="mt-4 text-sm text-gray-300 max-w-md mx-auto">
+            {animationPhase === 0 
+              ? "Already at minimum risk! 🎉" 
+              : treatCooldown
+              ? "Wait for cooldown to have another treat..."
+              : "Click the sweet treat to lower your crash out risk! 🍬"
+            }
+          </div>
         </div>
       </div>
     </main>
