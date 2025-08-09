@@ -1,4 +1,40 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
 export default function Home() {
+  const [animationPhase, setAnimationPhase] = useState(0);
+  const [needleRotation, setNeedleRotation] = useState(-135); // Start at safe position
+  const [isBroken, setIsBroken] = useState(false);
+
+  useEffect(() => {
+    const animationSequence = async () => {
+      // Phase 1: Start at safe (0-2s)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Phase 2: Move to caution (2-4s)
+      setAnimationPhase(1);
+      setNeedleRotation(-45);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Phase 3: Move to danger (4-6s)
+      setAnimationPhase(2);
+      setNeedleRotation(45);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Phase 4: Move to overload and break (6-8s)
+      setAnimationPhase(3);
+      setNeedleRotation(135);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Phase 5: Breaking effect
+      setIsBroken(true);
+      setAnimationPhase(4);
+    };
+
+    animationSequence();
+  }, []);
+
   return (
     <main className="min-h-screen p-8 flex flex-col items-center justify-center text-center bg-gray-900">
       <div className="bg-gray-800 p-8 rounded-lg shadow-2xl border border-red-500/50">
@@ -9,21 +45,60 @@ export default function Home() {
           {/* Meter Background */}
           <div className="absolute inset-0 rounded-full border-8 border-gray-700"></div>
           
-          {/* Danger Zones */}
-          <div className="absolute inset-2 rounded-full border-4 border-yellow-500/30"></div>
-          <div className="absolute inset-4 rounded-full border-4 border-orange-500/40"></div>
-          <div className="absolute inset-6 rounded-full border-4 border-red-500/60"></div>
+          {/* Danger Zones - appear progressively */}
+          <div className={`absolute inset-2 rounded-full border-4 transition-all duration-1000 ${
+            animationPhase >= 1 ? 'border-yellow-500/60 shadow-yellow-500/30 shadow-lg' : 'border-gray-600/20'
+          }`}></div>
+          <div className={`absolute inset-4 rounded-full border-4 transition-all duration-1000 ${
+            animationPhase >= 2 ? 'border-orange-500/70 shadow-orange-500/40 shadow-lg' : 'border-gray-600/20'
+          }`}></div>
+          <div className={`absolute inset-6 rounded-full border-4 transition-all duration-1000 ${
+            animationPhase >= 3 ? 'border-red-500/80 shadow-red-500/50 shadow-lg' : 'border-gray-600/20'
+          }`}></div>
           
-          {/* Overloaded Center */}
-          <div className="absolute inset-8 rounded-full bg-red-600 border-4 border-red-400 animate-pulse shadow-lg shadow-red-500/50">
-            <div className="absolute inset-2 rounded-full bg-red-500 flex items-center justify-center">
-              <span className="text-white font-black text-2xl animate-pulse">⚠️</span>
-            </div>
+          {/* Center - changes based on phase */}
+          <div className={`absolute inset-8 rounded-full transition-all duration-1000 ${
+            animationPhase >= 4 
+              ? 'bg-red-600 border-4 border-red-400 animate-pulse shadow-lg shadow-red-500/50' 
+              : animationPhase >= 3
+              ? 'bg-red-500/50 border-4 border-red-500/70 shadow-red-500/30 shadow-md'
+              : animationPhase >= 2
+              ? 'bg-orange-500/30 border-4 border-orange-500/50'
+              : animationPhase >= 1
+              ? 'bg-yellow-500/20 border-4 border-yellow-500/40'
+              : 'bg-green-500/10 border-4 border-green-500/30'
+          }`}>
+            {animationPhase >= 4 && (
+              <div className="absolute inset-2 rounded-full bg-red-500 flex items-center justify-center">
+                <span className="text-white font-black text-2xl animate-pulse">⚠️</span>
+              </div>
+            )}
+            {animationPhase === 3 && (
+              <div className="absolute inset-2 rounded-full bg-red-400/50 flex items-center justify-center">
+                <span className="text-red-200 font-bold text-xl">!</span>
+              </div>
+            )}
           </div>
           
-          {/* Needle pointing to max */}
-          <div className="absolute top-1/2 left-1/2 w-1 h-32 bg-red-400 origin-bottom transform -translate-x-1/2 translate-y-full rotate-45 shadow-lg"></div>
-          <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-red-600 rounded-full transform -translate-x-1/2 -translate-y-1/2 border-2 border-red-400"></div>
+          {/* Animated Needle */}
+          <div 
+            className={`absolute top-1/2 left-1/2 w-1 h-28 shadow-lg transition-all duration-1000 ease-in-out ${
+              isBroken ? 'animate-pulse' : ''
+            } ${
+              animationPhase >= 3 ? 'bg-red-400' : 
+              animationPhase >= 2 ? 'bg-orange-400' : 
+              animationPhase >= 1 ? 'bg-yellow-400' : 'bg-green-400'
+            }`}
+            style={{ 
+              transform: `translate(-50%, -100%) rotate(${needleRotation}deg)`,
+              transformOrigin: 'bottom center'
+            }}
+          ></div>
+          <div className={`absolute top-1/2 left-1/2 w-4 h-4 rounded-full transform -translate-x-1/2 -translate-y-1/2 border-2 transition-all duration-500 ${
+            animationPhase >= 3 ? 'bg-red-600 border-red-400' : 
+            animationPhase >= 2 ? 'bg-orange-600 border-orange-400' : 
+            animationPhase >= 1 ? 'bg-yellow-600 border-yellow-400' : 'bg-green-600 border-green-400'
+          }`}></div>
           
           {/* Scale Markings */}
           <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-green-400 font-bold">SAFE</div>
@@ -34,22 +109,72 @@ export default function Home() {
         
         {/* Status Display */}
         <div className="space-y-4">
-          <div className="bg-red-600/20 border border-red-500 rounded-lg p-4">
-            <div className="text-red-400 font-bold text-lg mb-2">⚠️ CRITICAL WARNING ⚠️</div>
-            <div className="text-red-300">Risk Level: <span className="font-black text-red-400 animate-pulse">MAXIMUM OVERLOAD</span></div>
-            <div className="text-red-300">Status: <span className="font-bold text-red-400">IMMINENT CRASH OUT</span></div>
+          {/* Status Panel - changes based on phase */}
+          <div className={`rounded-lg p-4 transition-all duration-1000 ${
+            animationPhase >= 4 
+              ? 'bg-red-600/20 border border-red-500' 
+              : animationPhase >= 3
+              ? 'bg-red-500/15 border border-red-400'
+              : animationPhase >= 2
+              ? 'bg-orange-500/15 border border-orange-400'
+              : animationPhase >= 1
+              ? 'bg-yellow-500/15 border border-yellow-400'
+              : 'bg-green-500/15 border border-green-400'
+          }`}>
+            {animationPhase >= 4 ? (
+              <>
+                <div className="text-red-400 font-bold text-lg mb-2 animate-pulse">⚠️ CRITICAL WARNING ⚠️</div>
+                <div className="text-red-300">Risk Level: <span className="font-black text-red-400 animate-pulse">MAXIMUM OVERLOAD</span></div>
+                <div className="text-red-300">Status: <span className="font-bold text-red-400">IMMINENT CRASH OUT</span></div>
+              </>
+            ) : animationPhase >= 3 ? (
+              <>
+                <div className="text-red-400 font-bold text-lg mb-2">🚨 DANGER ZONE 🚨</div>
+                <div className="text-red-300">Risk Level: <span className="font-bold text-red-400">HIGH RISK</span></div>
+                <div className="text-red-300">Status: <span className="font-bold text-red-400">APPROACHING OVERLOAD</span></div>
+              </>
+            ) : animationPhase >= 2 ? (
+              <>
+                <div className="text-orange-400 font-bold text-lg mb-2">⚠️ WARNING ⚠️</div>
+                <div className="text-orange-300">Risk Level: <span className="font-bold text-orange-400">ELEVATED</span></div>
+                <div className="text-orange-300">Status: <span className="font-bold text-orange-400">MONITOR CLOSELY</span></div>
+              </>
+            ) : animationPhase >= 1 ? (
+              <>
+                <div className="text-yellow-400 font-bold text-lg mb-2">⚠️ CAUTION ⚠️</div>
+                <div className="text-yellow-300">Risk Level: <span className="font-bold text-yellow-400">MODERATE</span></div>
+                <div className="text-yellow-300">Status: <span className="font-bold text-yellow-400">INCREASING</span></div>
+              </>
+            ) : (
+              <>
+                <div className="text-green-400 font-bold text-lg mb-2">✅ SYSTEM NOMINAL</div>
+                <div className="text-green-300">Risk Level: <span className="font-bold text-green-400">SAFE</span></div>
+                <div className="text-green-300">Status: <span className="font-bold text-green-400">ALL SYSTEMS GO</span></div>
+              </>
+            )}
           </div>
           
-          {/* Flashing indicators */}
-          <div className="flex justify-center space-x-4">
-            <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
-            <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-            <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-          </div>
+          {/* Flashing indicators - only show when broken */}
+          {animationPhase >= 4 && (
+            <>
+              <div className="flex justify-center space-x-4">
+                <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+                <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+              </div>
+              
+              <div className="text-red-400 text-sm font-mono animate-pulse">
+                SYSTEM OVERLOAD DETECTED • IMMEDIATE ACTION REQUIRED
+              </div>
+            </>
+          )}
           
-          <div className="text-red-400 text-sm font-mono animate-pulse">
-            SYSTEM OVERLOAD DETECTED • IMMEDIATE ACTION REQUIRED
-          </div>
+          {/* Progress indicator during animation */}
+          {animationPhase < 4 && (
+            <div className="text-gray-400 text-sm font-mono">
+              Monitoring system status...
+            </div>
+          )}
         </div>
       </div>
     </main>
